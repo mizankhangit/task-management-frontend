@@ -113,7 +113,7 @@ export function ProjectCard({
 
       <CardFooter className="p-5 pt-3 flex items-center justify-between border-t border-border/40 bg-muted/20">
         <Link
-          href={`/tasks?project=${project.id}`}
+          href={`/projects/${project.id}`}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline group/link"
         >
           <span>View Tasks</span>

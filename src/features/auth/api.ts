@@ -30,15 +30,17 @@ export async function loginUser(
 }
 
 export async function getCurrentUser(
-  accessToken: string
+  accessToken?: string
 ): Promise<User> {
   const response = await api.get<User>(
     "/auth/me/",
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
+    accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined
   );
 
   return response.data;

@@ -26,6 +26,9 @@ api.interceptors.request.use((config) => {
 	return config;
 });
 
+// Shared promise for concurrent 401 refresh calls
+let refreshPromise: Promise<string> | null = null;
+
 api.interceptors.response.use(
 	(response) => response,
 
@@ -35,36 +38,50 @@ api.interceptors.response.use(
 				_retry?: boolean;
 			};
 
-		if (error.response?.status !== 401 || originalRequest?._retry) {
+		const isAuthEndpoint =
+			originalRequest?.url?.includes("/auth/login/") ||
+			originalRequest?.url?.includes("/auth/refresh/");
+
+		if (
+			error.response?.status !== 401 ||
+			originalRequest?._retry ||
+			isAuthEndpoint
+		) {
 			return Promise.reject(error);
 		}
 
 		originalRequest._retry = true;
 
-		const {
-			refreshToken,
-			setTokens,
-			logout,
-		} = useAuthStore.getState();
+		const { refreshToken, setTokens, logout } =
+			useAuthStore.getState();
 
 		if (!refreshToken) {
 			logout();
-
 			return Promise.reject(error);
 		}
 
 		try {
-			const response = await axios.post(
-				`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/auth/refresh/`,
-				{
-					refresh: refreshToken,
-				}
-			);
+			// Reuse single refresh promise if multiple requests 401 at the same time
+			if (!refreshPromise) {
+				refreshPromise = (async () => {
+					try {
+						const response = await axios.post(
+							`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/auth/refresh/`,
+							{
+								refresh: refreshToken,
+							}
+						);
 
-			const newAccessToken =
-				response.data.access;
+						const newAccessToken = response.data.access;
+						setTokens(newAccessToken);
+						return newAccessToken;
+					} finally {
+						refreshPromise = null;
+					}
+				})();
+			}
 
-			setTokens(newAccessToken);
+			const newAccessToken = await refreshPromise;
 
 			originalRequest.headers.Authorization =
 				`Bearer ${newAccessToken}`;
@@ -72,7 +89,6 @@ api.interceptors.response.use(
 			return api(originalRequest);
 		} catch (refreshError) {
 			logout();
-
 			return Promise.reject(refreshError);
 		}
 	}

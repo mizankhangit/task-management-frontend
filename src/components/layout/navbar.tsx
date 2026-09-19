@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ListTodo,
   LogOut,
+  Trash2,
   User as UserIcon,
 } from "lucide-react";
 
@@ -42,6 +43,11 @@ export function Navbar() {
       name: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Trash",
+      href: "/trash",
+      icon: Trash2,
     },
   ];
 

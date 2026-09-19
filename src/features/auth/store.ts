@@ -16,6 +16,8 @@ type AuthState = {
     refreshToken: string
   ) => void;
 
+  setUser: (user: User) => void;
+
   setTokens: (
     accessToken: string,
     refreshToken?: string
@@ -41,6 +43,10 @@ export const useAuthStore = create<AuthState>()(
           accessToken,
           refreshToken,
         });
+      },
+
+      setUser: (user) => {
+        set({ user });
       },
 
       setTokens: (
